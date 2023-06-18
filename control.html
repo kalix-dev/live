@@ -1,0 +1,206 @@
+<!DOCTYPE html> 
+ <html> 
+ <head> 
+ </head> 
+  
+ <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script> 
+ <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script> 
+ <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script> 
+ <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script> 
+  
+  
+ <style> 
+     .container { 
+       width: 90%; 
+       height: 180px; 
+       display: grid; 
+       grid-template-columns: repeat(3, 5fr); 
+       grid-gap: 20px; 
+       padding: 20px; 
+       margin-left: 10px; 
+       margin-right: 10px; 
+     } 
+  
+     .card { 
+       width: 100%; 
+       height: 100%; 
+       display: inline-block; 
+       margin: 10px; 
+       padding: 10px; 
+       border: 1px solid #424242; 
+       border-radius: 5px; 
+       background-color: #121212; 
+       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+       text-align: center; 
+     } 
+  
+     .card img { 
+       max-width: 100%; 
+       height: auto; 
+       cursor: pointer; 
+     } 
+      .my-button { 
+         width:100%; 
+         height: 100px; 
+         font-size: 60px; 
+         font-weight: bold; 
+                border-radius: 35px; 
+         background-color: #212121; 
+         color: #f00; 
+                margin-top: 20px; 
+ } 
+  
+  
+  
+     .card .location-link { 
+       display: block; 
+       margin-top: 10px; 
+     } 
+  
+     /* Dark mode */ 
+     .dark-mode { 
+       background-color: #000000; 
+       color: #fff; 
+     } 
+ </style> 
+ </head> 
+ <body> 
+   <button class="my-button" onclick="loginWithGoogle()">Log in with Google</button> 
+   <div id="dataContainer" class="container"></div> 
+  
+  <script> 
+     // Initialize Firebase 
+     const firebaseConfig = { 
+   apiKey: "AIzaSyBfqi85dUYPHR2Lfnwdz3ZYEXEHNzZmkLk", 
+   authDomain: "public-demo1.firebaseapp.com", 
+   databaseURL: "https://public-demo1-default-rtdb.firebaseio.com", 
+   projectId: "public-demo1", 
+   storageBucket: "public-demo1.appspot.com", 
+   messagingSenderId: "27666909796", 
+   appId: "1:27666909796:web:33a29feab840a144ea2d71" 
+       // ...other configuration values 
+     }; 
+     firebase.initializeApp(firebaseConfig); 
+  
+     // Get a database reference 
+     const database = firebase.database(); 
+     const ref = database.ref('/images'); // Path to the "images" node 
+  
+     // Get a storage reference 
+     const storage = firebase.storage(); 
+     const storageRef = storage.ref(); 
+  
+     // Log in with Google 
+     function loginWithGoogle() { 
+       const provider = new firebase.auth.GoogleAuthProvider(); 
+  
+       firebase.auth().signInWithPopup(provider) 
+         .then((result) => { 
+           // Handle successful login 
+           console.log(result.user); 
+         }) 
+         .catch((error) => { 
+           // Handle login error 
+           console.log(error); 
+         }); 
+     } 
+  
+     // Retrieve the data from the database 
+     function fetchData() { 
+       ref.on('value', (snapshot) => { 
+         const data = snapshot.val(); 
+         const dataContainer = document.getElementById('dataContainer'); 
+         dataContainer.innerHTML = ''; // Clear previous data 
+  
+         for (const key in data) { 
+           if (data.hasOwnProperty(key)) { 
+             const imageObj = data[key]; 
+             const imageUrl = imageObj.imageUrl; 
+             const location = imageObj.location; 
+  
+             // Create card element 
+             const cardElement = document.createElement('div'); 
+             cardElement.classList.add('card'); 
+  
+             // Create image element 
+             const imageElement = document.createElement('img'); 
+             imageElement.src = imageUrl; 
+             imageElement.addEventListener('click', () => { 
+               openFullscreen(imageElement); 
+             }); 
+  
+             // Create location link element 
+             const locationElement = document.createElement('a'); 
+             locationElement.classList.add('location-link'); 
+             locationElement.href = location; 
+             locationElement.textContent = 'Location'; 
+  
+             // Create delete button element 
+             const deleteButton = document.createElement('button'); 
+             deleteButton.textContent = 'Delete'; 
+             deleteButton.addEventListener('click', () => { 
+               deleteImage(key, imageUrl); 
+             }); 
+  
+             // Append elements to card 
+             cardElement.appendChild(imageElement); 
+             cardElement.appendChild(locationElement); 
+             cardElement.appendChild(deleteButton); 
+  
+             // Append card to data container 
+             dataContainer.appendChild(cardElement); 
+           } 
+         } 
+       }); 
+     } 
+  
+     // Open the image in fullscreen 
+     function openFullscreen(element) { 
+       if (element.requestFullscreen) { 
+         element.requestFullscreen(); 
+       } else if (element.mozRequestFullScreen) { 
+         element.mozRequestFullScreen(); 
+       } else if (element.webkitRequestFullscreen) { 
+         element.webkitRequestFullscreen(); 
+       } else if (element.msRequestFullscreen) { 
+         element.msRequestFullscreen(); 
+       } 
+     } 
+  
+     // Delete an image from the database 
+ function deleteImage(key, imageUrl) { 
+   const imageRef = firebase.database().ref('/images/' + key); 
+   const imageStorageRef = storage.refFromURL(imageUrl); 
+  
+   imageRef 
+     .remove() 
+     .then(() => { 
+       console.log('Image deleted from database successfully'); 
+       // Delete the image from storage 
+       return imageStorageRef.delete(); 
+     }) 
+     .then(() => { 
+       console.log('Image deleted from storage successfully'); 
+       fetchData(); // Fetch the updated data instead of reloading the page 
+     }) 
+     .catch((error) => { 
+       console.error('Error deleting image:', error); 
+     }); 
+ } 
+  
+  
+     // Toggle dark mode 
+     function toggleDarkMode() { 
+       document.body.classList.toggle('dark-mode'); 
+     } 
+     toggleDarkMode(); 
+  
+     // Fetch data on initial load 
+     fetchData(); 
+     // Fetch data on any change in the database 
+     ref.on('child_changed', () => { 
+       fetchData(); 
+     }); 
+   </script> 
+ </body> 
+ </html>
