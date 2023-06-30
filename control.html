@@ -36,6 +36,7 @@
       height: auto;
       cursor: pointer;
     }
+
     .my-button {
       width: 100%;
       height: 100px;
@@ -57,15 +58,37 @@
       background-color: #000000;
       color: #fff;
     }
+
+    .sticky-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 10px;
+      background-color: #212121;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+    }
+
+    .url-input {
+      width: 300px;
+      height: 30px;
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
   <button class="my-button" onclick="loginWithGoogle()">Log in with Google</button>
   <div id="dataContainer" class="container"></div>
 
+  <div class="sticky-container">
+    <button onclick="postURL()">Post URL</button>
+    <input type="text" id="urlInput" class="url-input" placeholder="Enter URL">
+  </div>
+
   <script>
     // Initialize Firebase
- 
      const firebaseConfig = { 
    apiKey: "AIzaSyBfqi85dUYPHR2Lfnwdz3ZYEXEHNzZmkLk", 
    authDomain: "public-demo1.firebaseapp.com", 
@@ -171,7 +194,7 @@
       imageRef
         .remove()
         .then(() => {
-          console.log('Image deleted from database successfully');
+          console.log('Image deleted from the database successfully');
           // Delete the image from storage
           return imageStorageRef.delete();
         })
@@ -187,14 +210,19 @@
     // Post the URL to the 'urldb' node
     function postURL() {
       const imagesRef = firebase.database().ref('urldb');
-      const url = "https://example.com";
-      imagesRef.set({ weburll: url })
-        .then(() => {
-          console.log('URL posted successfully!');
-        })
-        .catch(error => {
-          console.error('Error posting URL:', error);
-        });
+      const urlInput = document.getElementById('urlInput');
+      const url = urlInput.value.trim();
+
+      if (url !== "") {
+        imagesRef.set({ weburll: url })
+          .then(() => {
+            console.log('URL posted successfully!');
+            urlInput.value = ""; // Clear the input field
+          })
+          .catch(error => {
+            console.error('Error posting URL:', error);
+          });
+      }
     }
 
     // Toggle dark mode
@@ -210,6 +238,5 @@
       fetchData();
     });
   </script>
-  <button onclick="postURL()">Post URL</button>
 </body>
 </html>
